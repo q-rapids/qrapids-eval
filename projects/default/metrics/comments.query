@@ -1,0 +1,23 @@
+{ 
+  "size" : 0,
+  "query": {
+    "bool": {
+      "must" : [
+      	{ "term" : { "bcKey" : "{{bcKey}}" } },
+        { "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
+        { "term" : { "metric" : "comment_lines_density"} },
+        { "term" : { "qualifier" : "FIL" }}
+      ]
+    }
+  },
+  "aggs": {
+    "good" : {
+      "range" : {
+        "field" : "floatvalue",
+        "ranges" : [
+          { "from" : {{comments.threshold.lower}}, "to" : {{comments.threshold.upper}} }
+        ]
+      }
+    }
+  }
+}

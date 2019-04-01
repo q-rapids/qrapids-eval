@@ -1,0 +1,4 @@
+since 0.0.3
+- Metrics/Factors/Indicators with null or NaN value will not be stored
+- Updated metrics.properties: Issue Metrics for Redmine (welldefinedissuesredmine, bugratioredmine). Enable only those relevant for your issue management.
+- Updated index.properties

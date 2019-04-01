@@ -1,0 +1,19 @@
+{
+  "size" : 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term" : { "project" : "{{project}}" } },
+        { "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
+        { "terms" : { "severity" : ["BLOCKER","CRITICAL"] } }
+      ]
+    }
+  },
+  "aggs": {
+    "filesWithCriticalIssues": {
+      "cardinality": {
+        "field": "component"
+      }
+    }
+  }
+}

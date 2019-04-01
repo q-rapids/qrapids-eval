@@ -1,0 +1,19 @@
+{
+      "properties": {
+      
+        "project" : { "type": "keyword"},
+        "relation" : { "type" : "keyword" },
+        "evaluationDate" : { "type" : "date" },
+        
+        "sourceId" : { "type": "keyword"},
+        "sourceType" : { "type": "keyword"},
+        
+        "targetId" : { "type": "keyword"},
+        "targetType" : { "type": "keyword"},
+        
+        "value" : { "type" : "double"},
+        "weight" : { "type" : "double" }
+        
+      }
+      
+}

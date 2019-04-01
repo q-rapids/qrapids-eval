@@ -1,0 +1,21 @@
+{
+      "properties": {
+      
+        "project" : { "type": "keyword" },
+        "factor" : { "type": "keyword" },
+		"evaluationDate" : { "type" : "date" },
+		
+        "indicators" : { "type" : "keyword" },
+        "weights" : { "type": "double" },
+        
+        "name" : { "type": "keyword" },
+        "description": { "type": "text"},
+        "datasource" : { "type" : "keyword" },
+        
+        "value": { "type": "double" },
+        "info" : { "type": "text" },
+        "type": { "type": "keyword"}
+
+      }
+      
+}

@@ -1,0 +1,19 @@
+{
+	"query": {
+    	"bool": {
+			"must" : {
+        		"term" : {
+          			"bcKey" : "{{bcKey}}"
+        		}
+      		}
+		}
+  	},
+	"size": 1,
+	"sort": [
+    	{
+			"snapshotDate": {
+				"order": "desc"
+      		}
+    	}
+	]
+}

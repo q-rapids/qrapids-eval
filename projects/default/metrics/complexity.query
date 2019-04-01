@@ -1,0 +1,24 @@
+{ 
+  "size" : 0,
+  "query": {
+    "bool": {
+      "must" : [
+      	{ "term" : { "bcKey" : "{{bcKey}}" } },
+        { "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
+        { "term" : { "metric" : "function_complexity"} },
+        { "term" : { "qualifier" : "FIL" } }
+      ]
+    }
+  },
+  "aggs": {
+    "goodBad" : {
+      "range" : {
+        "field" : "floatvalue",
+        "ranges" : [
+          { "to" : {{avgcplx.threshold}} }, 
+          { "from" : {{avgcplx.threshold}} }
+        ]
+      }
+    }
+  }
+}
