@@ -58,7 +58,7 @@ public class EvalProject {
 	}
 	
 	public void run() {
-		
+
 		log.info("Connecting to Elasticsearch Source (" + projectProperties.getProperty("elasticsearch.source.ip") + ")\n");
 		elasticSource = new Elasticsearch( projectProperties.getProperty("elasticsearch.source.ip") );
 		

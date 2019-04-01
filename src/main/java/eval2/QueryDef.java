@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import type.IndexItem;
 import util.NumberUtils;
 
 public class QueryDef {
@@ -207,17 +208,17 @@ public class QueryDef {
 		if ( props.containsKey("onError") ) {
 			return props.getProperty("onError");
 		} else {
-			return projectProperties.getProperty("onError.default","drop");
+			return projectProperties.getProperty("onError.default",IndexItem.ON_ERROR_DROP);
 		}
 		
 	}
 	
 	public Boolean onErrorDrop() {
-		return onError().equals("drop");
+		return onError().equals(IndexItem.ON_ERROR_DROP);
 	}
 	
 	public Boolean onErrorSet0() {
-		return onError().equals("set0");
+		return onError().equals(IndexItem.ON_ERROR_SET0);
 	}
 	
 	public void setIndex( String index ) {

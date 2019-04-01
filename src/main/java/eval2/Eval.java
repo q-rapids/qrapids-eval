@@ -80,8 +80,13 @@ public class Eval {
 		
 		for ( File projectDir : projectFolders ) {
 			for ( String ed : evaluationDates ) {
-				EvalProject ep = new EvalProject(projectDir, ed);
-				ep.run();
+				try {
+					EvalProject ep = new EvalProject(projectDir, ed);
+					ep.run();
+				} catch( Exception e ) {
+					e.printStackTrace();
+					log.severe("Evaluaton of project in folder " + projectDir + " terminated with an error!" );
+				}
 			}
 		}
 		
