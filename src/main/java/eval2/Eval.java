@@ -65,7 +65,7 @@ public class Eval {
 					
 					evaluationDates.addAll( enumeratePeriod(fromDate, toDate) );
 					
-					log.info("Using user-defined evaluation period: " + dateFormat.format( fromDate ) + " - " + dateFormat.format( toDate ) );
+					log.info("Using user-defined evaluation period: " + dateFormat.format( fromDate ) + " - " + dateFormat.format( toDate ) + ".\n" );
 				} catch (ParseException e) {
 					usage();
 					return;
@@ -80,6 +80,7 @@ public class Eval {
 		
 		for ( File projectDir : projectFolders ) {
 			for ( String ed : evaluationDates ) {
+				log.info("Evaluating project folder " + projectDir.getName() + " for evaluationDate " + ed + ".\n");
 				try {
 					EvalProject ep = new EvalProject(projectDir, ed);
 					ep.run();
@@ -97,7 +98,6 @@ public class Eval {
 	private static List<String> enumeratePeriod(Date fromDate, Date toDate) {
 
 		Calendar c = Calendar.getInstance();
-		  // number of days to add
 		
 		List<String> days = new ArrayList<>();
 		
@@ -114,9 +114,9 @@ public class Eval {
 	
 	private static void usage() {
 		System.out.println("Usage:");
-		System.out.println("java -jar qr-eval.jar");
-		System.out.println("java -jar qr-eval.jar evaluationDate 2019-01-31");
-		System.out.println("java -jar qr-eval.jar from 2019-01-01 to 2019-01-31");
+		System.out.println("java -jar qrapids-eval.jar");
+		System.out.println("java -jar qrapids-eval.jar evaluationDate 2019-01-31");
+		System.out.println("java -jar qrapids-eval.jar from 2019-01-01 to 2019-01-31");
 	}
 
 

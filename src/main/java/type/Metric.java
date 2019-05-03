@@ -17,7 +17,8 @@ public class Metric extends IndexItem {
 			String description,
 			String datasource,
 			Double value,
-			String info
+			String info,
+			String onError
 
 		) {
 
@@ -34,6 +35,8 @@ public class Metric extends IndexItem {
 		
 		this.value = value;
 		this.info = info;
+		
+		this.onError = onError;
 
 	}
 	

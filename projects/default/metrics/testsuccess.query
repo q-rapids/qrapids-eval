@@ -1,5 +1,0 @@
-{   
-	"query" : {"bool": { "must" : { "match" : { "jobName" : "{{jobName}}" }}}},
-	"sort" : { "buildNumber" : {"order" : "desc"}},
-	"size" : 1
-}

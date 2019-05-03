@@ -1,6 +1,5 @@
 package eval2;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
@@ -26,7 +25,6 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.script.mustache.SearchTemplateRequestBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -35,7 +33,6 @@ import type.IndexItem;
 import type.Indicator;
 import type.Metric;
 import type.Relation;
-import util.Evaluator;
 import util.JsonPath;
 
 public class Elasticsearch {
@@ -48,9 +45,8 @@ public class Elasticsearch {
 	
 	private String elasticsearchIP;
 	
-	public String getElasticsearchIP() {
-		return elasticsearchIP;
-	}
+	private static Map<String, TransportClient> clientCache = new HashMap<>();
+
 
 	/**
 	 * Create on address of an Elasticsearch Server
@@ -59,13 +55,21 @@ public class Elasticsearch {
 	public Elasticsearch( String elasticsearchIP ) {
 		
 		this.elasticsearchIP = elasticsearchIP;
+		
+		if ( clientCache.containsKey(elasticsearchIP) ) {
+			log.info("Using cached TransportClient.\n");
+			client = clientCache.get(elasticsearchIP);
+			return;
+		} 
 
 		try {
 			InetAddress address = InetAddress.getByName(elasticsearchIP);
 			client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress( new InetSocketTransportAddress( address , 9300 ) );
 			if ( client.connectedNodes().size() == 0 ) {
-				log.severe( "Could not connect ot Elasticsearch on " + elasticsearchIP + ", exiting." );
+				log.severe( "Could not connect to Elasticsearch on " + elasticsearchIP + ", exiting." );
 				System.exit(0);
+			} else {
+				clientCache.put(elasticsearchIP, client);
 			}
 		} catch (UnknownHostException e) {
 			System.err.println("Could not connect ot Elasticsearch on " + elasticsearchIP);
@@ -80,6 +84,10 @@ public class Elasticsearch {
 	 */
 	public TransportClient getClient() {
 		return client;
+	}
+	
+	public String getElasticsearchIP() {
+		return elasticsearchIP;
 	}
 
 	/**
@@ -239,7 +247,7 @@ public class Elasticsearch {
 				evaluationDate
 		);
 		
-		log.info("deleted " + deleted + " factors (evaluationDate=" + evaluationDate + ")");
+		log.info("deleted " + deleted + " factors (evaluationDate=" + evaluationDate + ").\n");
 		
 		BulkResponse br = writeBulk(evaluationDate, indexName, "factors", factors);
 		
@@ -258,7 +266,7 @@ public class Elasticsearch {
 				evaluationDate
 		);
 		
-		log.info("deleted " + deleted + " indicators (evaluationDate=" + evaluationDate + ")");
+		log.info("deleted " + deleted + " indicators (evaluationDate=" + evaluationDate + ").\n");
 		
 		BulkResponse br = writeBulk(evaluationDate, indexName, "indicators", indicators);
 		
@@ -313,7 +321,7 @@ public class Elasticsearch {
 				}
 			}
 		} else {
-			result = "BulkUpdate success! " + br.getItems().length + " items written!" ;
+			result = "BulkUpdate success! " + br.getItems().length + " items written!\n" ;
 		}
 		
 		return result;
@@ -323,8 +331,11 @@ public class Elasticsearch {
 		try {
 			BulkByScrollResponse response =
 					  DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
-					    .filter(QueryBuilders.matchQuery("evaluationDate", evaluationDate))
-					    .filter(QueryBuilders.matchQuery("project", project))
+					    .filter(  
+					    		QueryBuilders.boolQuery()
+					    		.must(QueryBuilders.matchQuery("evaluationDate", evaluationDate))
+					    		.must(QueryBuilders.matchQuery("project", project))
+					    )
 					    .source(indexName)                                  
 					    .get();  
 			

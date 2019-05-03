@@ -46,18 +46,37 @@ public class EvalProject {
 	// metric query set of this project
 	private Map<String,QueryDef> metricQuerySet;
 	
+	public String globalErrorStrategy = "drop";
+
+	
 	public EvalProject(File projectFolder, String evaluationDate ) {
 		
 		this.projectFolder = projectFolder;
 		
 		String projectPropertyFilename = projectFolder.getAbsolutePath() + File.separatorChar + "project.properties";
 		this.projectProperties = FileUtils.loadProperties( new File(projectPropertyFilename) );
+		
+		globalErrorStrategy = projectProperties.getProperty("onError", "drop");
 
 		this.evaluationDate = evaluationDate;
 		
 	}
 	
+	public void validateModel() {
+		
+		File metricQueryFolder = new File( projectFolder.getAbsolutePath() + File.separatorChar + "metrics" );
+		metricQuerySet = getQuerySet( metricQueryFolder ); 
+		
+		ModelChecker.check( metricQuerySet, readFactorMap(), readIndicatorMap() );
+		
+	}
+	
 	public void run() {
+		
+		validateModel();
+		
+		File metricQueryFolder = new File( projectFolder.getAbsolutePath() + File.separatorChar + "metrics" );
+		metricQuerySet = getQuerySet( metricQueryFolder ); 
 
 		log.info("Connecting to Elasticsearch Source (" + projectProperties.getProperty("elasticsearch.source.ip") + ")\n");
 		elasticSource = new Elasticsearch( projectProperties.getProperty("elasticsearch.source.ip") );
@@ -69,11 +88,8 @@ public class EvalProject {
 		paramQuerySet = getQuerySet( paramQueryFolder ); 
 		
 		log.info("Executing param queries (" + paramQuerySet.size() + " found)\n");
-		Map<String,Object> queryParameter = executeParamQueryset( paramQuerySet );
+		Map<String,Object> queryParameter = executeParamQueryset( paramQuerySet, evaluationDate );
 		log.info("Param query result: " + queryParameter + "\n"); 
-		
-		File metricQueryFolder = new File( projectFolder.getAbsolutePath() + File.separatorChar + "metrics" );
-		metricQuerySet = getQuerySet( metricQueryFolder ); 
 
 		log.info("Executing metric queries (" + metricQuerySet.size() + " found)\n");
 		List<Metric> metrics = executeMetricQueries(queryParameter, metricQuerySet);
@@ -148,13 +164,13 @@ public class EvalProject {
 				factorValue = evaluate( metricDef, results );
 			} catch( RuntimeException rte ) {
 				
-				log.warning("Evaluation of formula " + metricDef + " failed. \nFactor: " + fact.getName());
+				log.warning("Evaluation of formula " + metricDef + " failed. \nFactor: " + fact.getName() + "\n");
 
 				if ( fact.onErrorSet0() ) {
-					log.warning("Factor " + fact.getName() + " set to 0.");
+					log.warning("Factor " + fact.getFactor() + " set to 0.\n");
 					factorValue = 0.0;
 				} else {
-					log.warning("Factor " + fact.getName() + " is dropped.");
+					log.warning("Factor " + fact.getFactor() + " is dropped.\n");
 					continue;
 				}
 
@@ -162,11 +178,14 @@ public class EvalProject {
 				
 			// factorValue not numeric?
 			if ( factorValue.isNaN() || factorValue.isInfinite() ) {
+				
+				log.warning("Evaluation of Factor " + fact.getFactor() + " resulted in non-numeric value.\n" );
+				
 				if ( fact.onErrorSet0() ) {
-					log.warning("Factor " + fact.getName() + " set to 0.");
+					log.warning("Factor " + fact.getFactor() + " set to 0.\n");
 					factorValue = 0.0;
 				} else {
-					log.warning("Factor " + fact.getName() + " is dropped.");
+					log.warning("Factor " + fact.getFactor() + " is dropped.\n");
 					continue;
 				}
 			} else {
@@ -274,10 +293,10 @@ public class EvalProject {
 				log.warning("Evaluation of formula " + metricDef + " failed.\nIndicator: " + ind.getName());
 
 				if ( ind.onErrorSet0() ) {
-					log.warning("Indicator " + ind.getName() + " set to 0.");
+					log.warning("Indicator " + ind.getName() + " set to 0.\n");
 					indicatorValue = 0.0;
 				} else {
-					log.warning("Indicator " + ind.getName() + " is dropped.");
+					log.warning("Indicator " + ind.getName() + " is dropped.\n");
 					continue;
 				}
 				
@@ -285,10 +304,10 @@ public class EvalProject {
 
 			if ( indicatorValue.isNaN() || indicatorValue.isInfinite() ) {
 				if ( ind.onErrorSet0() ) {
-					log.warning("Indicator " + ind.getName() + " set to 0.");
+					log.warning("Indicator " + ind.getName() + " set to 0.\n");
 					indicatorValue = 0.0;
 				} else {
-					log.warning("Indicator " + ind.getName() + " is dropped.");
+					log.warning("Indicator " + ind.getName() + " is dropped.\n");
 					continue;
 				}
 			} else {
@@ -319,9 +338,10 @@ public class EvalProject {
 	 * @param querySets Map of QueryDef
 	 * @return Map of execution results Name->Value
 	 */
-	private Map<String, Object> executeParamQueryset( Map<String, QueryDef> querySets ) {
+	private Map<String, Object> executeParamQueryset( Map<String, QueryDef> querySets, String evaluationDate ) {
 		
 		Map<String,Object> allExecutionResults = new HashMap<>();
+		allExecutionResults.put("evaluationDate", evaluationDate);
 
 		for ( String key : querySets.keySet() ) {
 
@@ -413,12 +433,13 @@ public class EvalProject {
 			String[] factors = metricQueryDef.getPropertyAsStringArray("factors");
 			Double[] weights = metricQueryDef.getPropertyAsDoubleArray("weights");
 			String datasource = elasticSource.getElasticsearchIP() + ":9200/" + metricQueryDef.getProperty("index");
-
-			// TODO: onError
-			
-			
-			
-			Metric m = new Metric(project, metric, evaluationDate, factors, weights, name, description, datasource, metricValue, info );
+		
+			String onError = metricQueryDef.getProperty("onError");
+			if ( onError == null ) {
+				onError = globalErrorStrategy;
+			}
+		
+			Metric m = new Metric(project, metric, evaluationDate, factors, weights, name, description, datasource, metricValue, info, onError );
 			result.add(m);
 			
 		}
@@ -497,10 +518,9 @@ public class EvalProject {
 			String onError = factorProperties.getProperty(f + ".onError");
 			
 			if ( onError == null ) {
-				onError = projectProperties.getProperty("onError", IndexItem.ON_ERROR_DROP );
+				onError = globalErrorStrategy;
 			}
 
-			//TODO: onError
 			Factor fact = new Factor(enabled, project, factor, evaluationDate, indicators, weights, name, description, datasource, value, info, onError );
 			result.put(f, fact);
 			
@@ -542,7 +562,7 @@ public class EvalProject {
 			String onError = indicatorProperties.getProperty(i + ".onError");
 			
 			if ( onError == null ) {
-				onError = projectProperties.getProperty("onError", IndexItem.ON_ERROR_DROP );
+				onError = globalErrorStrategy;
 			}
 
 			Indicator ind = new Indicator(enabled, project, indicator, evaluationDate, parents, weights, name, description, datasource, value, info, onError );
