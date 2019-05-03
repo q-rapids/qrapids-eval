@@ -342,21 +342,21 @@ Defines the query for aggregation of factors into indicators, based on relations
 The date of the current day (format yyyy-MM-dd) will be available as parameter 'evaluationDate' in params- and metrics-queries
 
 ```
-java -jar qrapids-eval-<version>.jar
+java -jar qrapids-eval-<version>-jar-with-dependencies.jar
 ```
 
 ### Specify a single evaluation date
 The specified evaluationDate will be available as parameter 'evaluationDate' in params- and metrics-queries.
 
 ```
-java -jar qrapids-eval-<version>.jar evaluationDate 2019-03-01
+java -jar qrapids-eval-<version>-jar-with-dependencies.jar evaluationDate 2019-03-01
 ```
 
 ### Specify a date range for evaluation
 The defined projects will be evaluated for each day in the specified range.
 
 ```
-java -jar qrapids-eval-<version>.jar from 2019-03-01 to 2019-03-30
+java -jarqrapids-eval-<version>-jar-with-dependencies.jar from 2019-03-01 to 2019-03-30
 ```
 
 ### Build the connector
