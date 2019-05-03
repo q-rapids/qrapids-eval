@@ -266,14 +266,37 @@ In the bucket range aggregation, the matching documents are divided into two buc
 + Files with function_complexity < avgcplx.threshold
 + Files with function_complexity >= avgcplx.threshold
 
+__Example result__
+
+```
+{
+  "took" : 22,
+  "timed_out" : false,
+  "_shards" : { ... },
+  "hits" : {
+    "total" : 53,
+    ...
+  },
+  "aggregations" : {
+    "goodBad" : {
+      "buckets" : [
+        { "key" : "*-15.0", "to" : 15.0, "doc_count" : 53 },
+        { "key" : "15.0-*", "from" : 15.0, "doc_count" : 0 }
+      ]
+    }
+  }
+}
+```
+
+
 The metric is then computed as: 
 
 ```
-metric=complexity.good / ( complexity.good + complexity.bad )
+metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) = 100%
 ```
 This is the percentage of files having tolerable complexity.
 
-### project/default/factors.properties
+### projects/default/factors.properties
 The factors.properties file defines factors to compute along with their properties.
 
 Example factor definition (codequality):
@@ -289,7 +312,7 @@ codequality.onError=set0
 
 __Note:__ The onError property can be set to 'drop' or 'set0' and overwrites to setting in project.properties.
 
-### project/default/indicators.properties
+### projects/default/indicators.properties
 The indicators.properties file defines the indicators for a project. The parents- and weights-attribute currently have no effect, but could define an additional level of aggregation in future. 
 
 ```
@@ -299,6 +322,14 @@ productquality.description=Quality of the Product
 productquality.parents=meta
 productquality.weights=1.0
 ```
+
+### projects/default/factors
+Defines the query for aggregation of metrics into factors, based on relations index. DON'T TOUCH, unless you know what you are doing.
+
+### projects/default/indicators
+Defines the query for aggregation of factors into indicators, based on relations index. DON'T TOUCH, unless you know what you are doing.
+
+
 
 ## Running qrapids-eval
 
