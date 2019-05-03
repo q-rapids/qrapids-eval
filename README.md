@@ -223,9 +223,57 @@ metric=complexity.good / ( complexity.good + complexity.bad )
 onError=set0
 ```
 
+__Note:__ The onError property can be set to 'drop' or 'set0' and overwrites to setting in project.properties.
 
 
-### factors.properties
+complextiy.query
+
+```
+{ 
+  "size" : 0,
+  "query": {
+    "bool": {
+      "must" : [
+			{ "term" : { "bcKey" : "{{bcKey}}" } },
+			{ "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
+			{ "term" : { "metric" : "function_complexity"} },
+			{ "term" : { "qualifier" : "FIL" } }
+      ]
+    }
+  },
+  "aggs": {
+    "goodBad" : {
+      "range" : {
+        "field" : "floatvalue",
+        "ranges" : [
+          { "to" : {{avgcplx.threshold}} }, 
+          { "from" : {{avgcplx.threshold}} }
+        ]
+      }
+    }
+  }
+}
+```
+
+The complexity query is based on a [bool query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html) and uses a [bucket range aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html) to derive results.
+The query considers documents/records that fulfill the following conditions:
++ Only documents with a specific {{bcKey}} (only files of this project)
++ Only documents with a specific {{snapshotDate}} (parameter derived in params query 01_snapshotDate)
++ Only documents for metric "function_complexity"
++ Only documents with qualifier "FIL" (analyze only files, not folders etc.)
+
+In the bucket range aggregation, the matching documents are divided into two buckets: 
++ Files with function_complexity < avgcplx.threshold
++ Files with function_complexity >= avgcplx.threshold
+
+The metric is then computed as: 
+
+```
+metric=complexity.good / ( complexity.good + complexity.bad )
+```
+This is the percentage of files having tolerable complexity.
+
+### project/default/factors.properties
 The factors.properties file defines factors to compute along with their properties.
 
 Example factor definition (codequality):
@@ -236,23 +284,49 @@ codequality.name=Code Quality
 codequality.description=It measures the impact of code changes in source code quality. Specifically, ...
 codequality.indicators=productquality
 codequality.weights=1.0
-codequality.onError
+codequality.onError=set0
 ```
 
+__Note:__ The onError property can be set to 'drop' or 'set0' and overwrites to setting in project.properties.
 
+### project/default/indicators.properties
+The indicators.properties file defines the indicators for a project. The parents- and weights-attribute currently have no effect, but could define an additional level of aggregation in future. 
 
+```
+productquality.enabled=true
+productquality.name=Product Quality
+productquality.description=Quality of the Product
+productquality.parents=meta
+productquality.weights=1.0
+```
 
-
-
-
-
-
-## Running the Connector
+## Running qrapids-eval
 
 ### Prerequisites
+* Elasticsearch source and target servers are running and contain appropriate data
+* Java 1.8 is installed
+* A projects folder exists in the directory of qrapids-eval<version>.jar and contains a proper quality model configuration
 
-* Kafka has to be setup and running (see [Kafka Connect](https://docs.confluent.io/current/connect/index.html))
-* If you want your data to be transfered to Elasticsearch, Elasticsearch has to be setup and running. (see [Set up Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html))
+### Run without commandline parameters
+The date of the current day (format yyyy-MM-dd) will be available as parameter 'evaluationDate' in params- and metrics-queries
+
+```
+java -jar qrapids-eval-<version>.jar
+```
+
+### Specify a single evaluation date
+The specified evaluationDate will be available as parameter 'evaluationDate' in params- and metrics-queries.
+
+```
+java -jar qrapids-eval-<version>.jar evaluationDate 2019-03-01
+```
+
+### Specify a date range for evaluation
+The defined projects will be evaluated for each day in the specified range.
+
+```
+java -jar qrapids-eval-<version>.jar from 2019-03-01 to 2019-03-30
+```
 
 ### Build the connector
 ```
@@ -260,86 +334,15 @@ mvn package assembly:single
 ```
 After build, you'll find the generated jar in the target folder
 
-### Configuration files
+## Model validation
+Before the evaluation of a project starts, qrapids-eval performs a basic evaluation of the qualtity model. A warning is logged in the following cases:
++ A metrics-query mentions a factor in the factors-property, but the factor isn't defined in the factors.properties file.
++ A factor mentioned in a metric is not enabled
++ A factor is defined in factors.properties, but not mentioned in any metrics-query
++ An indicator is mentioned in the indicators-property of a defined factor, but is not defined in the indicators.properties file
++ An indicator is mentioned in the indicators-property of a defined factor, but is not enabled
++ An indicator is defined in indicators.properties, but it is not mentioned in any indicators-property of the defined factors
 
-Example Configuration for kafka standalone connector (standalone.properties)
-
-```properties 
-bootstrap.servers=<kafka-ip>:9092
-
-key.converter=org.apache.kafka.connect.storage.StringConverter
-value.converter=org.apache.kafka.connect.json.JsonConverter
-
-key.converter.schemas.enable=true
-value.converter.schemas.enable=true
-
-internal.key.converter=org.apache.kafka.connect.json.JsonConverter
-internal.value.converter=org.apache.kafka.connect.json.JsonConverter
-internal.key.converter.schemas.enable=false
-internal.value.converter.schemas.enable=false
-
-offset.storage.file.filename=/tmp/connect-sonarqube.offsets
-
-offset.flush.interval.ms=1000
-rest.port=8088
-```
-
-Configuration for Sonarqube Source Connector Worker (sonarqube.properties)
-
-```properties
-name=kafka-sonar-source-connector
-connector.class=connect.sonarqube.SonarqubeSourceConnector
-tasks.max=1
-
-# sonarqube server url
-sonar.url=http://<your-sonarqube-address>:9000
-
-#authenticate, user need right to Execute Analysis
-sonar.user=<sonaruser>
-sonar.pass=<sonarpass>
-
-# key for measure collection
-sonar.basecomponent.key=<key of application under analysis>
-
-#projectKeys for issue collection
-sonar.project.key=<key of application under analysis>
-
-# kafka topic names
-sonar.measure.topic=sonar.metrics
-sonar.issue.topic=sonar.issues
-
-# measures to collect, since sonarqube6 max 15 metrics
-# see https://docs.sonarqube.org/latest/user-guide/metric-definitions/
-sonar.metric.keys=ncloc,lines,comment_lines,complexity,violations,open_issues,code_smells,new_code_smells,sqale_index,new_technical_debt,bugs,new_bugs,reliability_rating,classes,functions
-
-#poll interval (86400 secs = 24 h)
-sonar.interval.seconds=86400
-
-#set snapshotDate manually, format: YYYY-MM-DD
-sonar.snapshotDate=
-```
-
-Configuration for Elasticsearch Sink Connector Worker (elasticsearch.properties)
-
-```properties
-name=kafka-sonarqube-elasticsearch
-connector.class=io.confluent.connect.elasticsearch.ElasticsearchSinkConnector
-tasks.max=1
-topics=sonarqube.measures,sonarqube.issues
-key.ignore=true
-connection.url=http://<elasticsearch>:9200
-type.name=sonarqube
-
-```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-
-## Running the Connector
-
-```
-<path-to-kafka>/bin/connect-standalone standalone.properties sonarqube.properties elasticsearch.properties
-```
 
 ## Built With
 
