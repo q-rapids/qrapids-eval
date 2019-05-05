@@ -1,5 +1,5 @@
 # Q-Rapids eval ![](https://img.shields.io/badge/License-Apache2.0-blue.svg)
-The q-rapids eval component queries raw data stored in an Elasticsearch server  to compute metrics, factors, and indicators, which are also get stored in an Elasticsearch server. In the q-rapids context, raw data is produced by a q-rapids kafka connector (read from Jira, Sonarqube or other sources). Q-Rapids eval aggregates the raw data into metrics, and further on into factors and indicators, according to a defined quality model.
+Qrapids-eval computes metrics, factors, and indicators on raw data stored in Elasticsearch. In the q-rapids context, raw data is produced by a q-rapids kafka connectors (read from Jira, Sonarqube or other sources). Q-Rapids eval aggregates the raw data into metrics, and further on into factors and indicators, according to a defined quality model.
 
 ##Configuration
 Q-Rapids eval is a commandline tool and is configured via a set of text files (query- and property-files) that are stored in a special folder structure. The top-folder is named 'projects'. This folder has to be present in the same directory where the qrapids-eval.jar file is stored. Each subfolder defines a quality model for a project to be evaluated.
@@ -44,7 +44,12 @@ dashboard.notification.url=http://<address>/QRapids-<version>/api/assessStrategi
 ```
 
 ### projects/default/project.properties
-The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/factors/indicators/relations index names), the addresses to source and target elasticsearch servers, and name and special properties of the source indexes (e.g. sonarqube).
+The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/factors/indicators/relations index names), the addresses to source and target Elasticsearch servers, the name and other properties of the source indexes(e.g. Sonarqube, Jira), and the names and types of the created (or reused) target indexes (metrics, factors, indicators, relations). 
+
+**NEW** in this version of qr-eval is the configurable Error Handling. Error handling takes place when the computation of metrics, factors, or indicators fails. This can happen because of missing data, errors in formulas (e.g. division by 0) and for other reasons. The onError property allows to set a project-wide default (which can be overwritten for metrics, factors etc.) how to handle these errors.
++ The 'drop' option just drops the metrics/factors/indicators item that can't be computed, no record is stored. 
++ The 'set0' option stores a record with value 0.
+
 
 ```properties
 # project name
@@ -99,7 +104,7 @@ indicators.index.type=indicators
 onError=set0
 ```
 
-Values of the project.properties can be referred to in property files of queries inside the params folder and properties of queries inside the metrics folder. To refer to a project property, the property name is prefixed by '$$'. In the example below, the project properties sonarqube.measures.index and sonarqube.measures.bcKey properties are used in the 01_lastSnapshotDate.properties in the params folder:
+Values of the * project.properties * can be used in * params- *  and * metrics * queries. To refer to a project property in a query's property file, prefix the property-name with '$$'. In the example below, the project properties sonarqube.measures.index and sonarqube.measures.bcKey are used in the * 01_lastSnapshotDate.properties * in the params folder:
 
 ```
 index=$$sonarqube.measures.index
@@ -107,15 +112,14 @@ param.bcKey=$$sonarqube.measures.bcKey
 result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
 ```
 
-__Error Handling__
-
-Error handling takes place when the computation of metrics, factors, or indicators fails. This can happen because of missing data, errors in formulas (e.g. division by 0) and for other reasons. The onError.default property allows to set a project-wide default (which can be overwritten for metrics, factors etc.) how to handle these errors.
-The 'drop' option just drops the metrics/factors/indicators item that can't be computed, no record is stored. The 'set0' option stores a record with value 0.
 
 ### projects/default/params
-In the first phase of a project evaluation, qr-eval executes the queries in the params folder (hereafter referred to as params queries). These do not compute metrics or factors, but allow for querying arbitrary other values, which then can be used on the metric query level as parameters. The params queries are executed in sequence (alphabetical order). For this reason, it is a good practice to follow the suggested naming scheme for parameter queries and start the name of a parameter query with a sequence of numbers (e.g. 01_query_name, 02_other_name). The results derived by a previous params query can be used as parameters in a succeeding params query.
+In the first phase of a project evaluation, qr-eval executes the queries in the params folder (* params queries*). These do not compute metrics or factors, but allow for querying arbitrary other values, which then can be used in subsequent * params * and * metrics * queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
 
-A query (params & metrics) consists of a pair of files:
+The * params * queries are executed in sequence (alphabetical order). For this reason, it is a good practice to follow the suggested naming scheme for parameter queries and start the name of with a sequence of numbers (e.g. 01_query_name, 02_other_name). Since params queries build on each other, a proper ordering is necessary.
+
+
+A query consists of a pair of files:
 * A .properties file, that declares the index the query should run on, as well as parameters and results of the query
 * A .query file that contains the actual query in Elasticsearch syntax (see [Elasticsearch DSL](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html))
 
@@ -131,7 +135,7 @@ result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
 + The index property is read from the project.properties files ($$-notation).
 + The query uses one parameter (bcKey), which is also read from the project properties file. Parameters of a query are declared with prefix 'param.' 
 + The query defines one result (lastSnapshotDate), that is specified as a path within the query result delivered by elasticsearch. Results are declared with prefix 'result.'
-All results computed by params queries can be used as parameters (without declaration) in metrics queries. Make shure that the names of the results of params queries are unique, otherwise they will get overwritten.
+All results computed by params queries can be used as parameters (without declaration) in subsequent params- and metrics queries. Make sure that the names of the results of params queries are unique, otherwise they will get overwritten.
 
 01_lastSnapshotDate.query
 
@@ -156,7 +160,7 @@ The lastSnapshotDate query is a [bool query](https://www.elastic.co/guide/en/ela
 + The documents must have the supplied parameter {{bcKey}} as value of the field bcKey (match only records of the specified project)
 + The value of the field snapshotDate must be lower or equal to the evaluationDate. The {{evaluationDate}} parameter is available to all queries without declaration and typically contains the date of today in format yyyy-MM-dd. The evaluationDate can be supplied via command-line (see command-line-options).
 
-The query limits the size of the result to one (size : 1) and sorts in descending order.
+The query limits the size of the result to one and sorts in descending order.
 
 Example query result:
 
@@ -289,12 +293,11 @@ __Example result__
 ```
 
 
-The metric is then computed as: 
+The metric (percentage of files having tolerable complexity) is then computed as: 
 
 ```
 metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) = 100%
 ```
-This is the percentage of files having tolerable complexity.
 
 ### projects/default/factors.properties
 The factors.properties file defines factors to compute along with their properties.

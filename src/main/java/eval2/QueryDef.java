@@ -15,14 +15,14 @@ public class QueryDef {
 	// project properties for variable resolution
 	private Properties projectProperties;
 	
-	// Query template to be executed on Elasticseach
+	// Query template to be executed on Elasticsearch
 	private String queryTemplate;
 
-	// Query Properties (parameters, indexes, ...)
+	// Query Properties (indexes, parameters, results ..)
 	private Properties props;
 	
 	/**
-	 *  A QueryDef consists of a queryTemplate (textual query definition) and Properties
+	 *  A named QueryDef consists of a queryTemplate (textual query definition) and Properties
 	 * @param name
 	 * @param queryTemplate
 	 * @param props
@@ -133,8 +133,8 @@ public class QueryDef {
 	}
 	
 	/**
-	 * Get a Map of all Properties, that have a key that starts with prefix.
-	 * In the resulting map, the prefix is removed from keys
+	 * Get all map-entries starting with prefix.
+	 * result keys  the prefix is removed from keys
 	 * @param prefix
 	 * @return
 	 */
@@ -153,7 +153,7 @@ public class QueryDef {
 	}
 	
 	/**
-	 * Get enabled Property as Boolean
+	 * Get enabled prop
 	 * @return
 	 */
 	public Boolean isEnabled() {

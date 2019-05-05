@@ -46,7 +46,7 @@ public class EvalProject {
 	// metric query set of this project
 	private Map<String,QueryDef> metricQuerySet;
 	
-	public String globalErrorStrategy = "drop";
+	public String projectErrorStrategy;
 
 	
 	public EvalProject(File projectFolder, String evaluationDate ) {
@@ -56,7 +56,7 @@ public class EvalProject {
 		String projectPropertyFilename = projectFolder.getAbsolutePath() + File.separatorChar + "project.properties";
 		this.projectProperties = FileUtils.loadProperties( new File(projectPropertyFilename) );
 		
-		globalErrorStrategy = projectProperties.getProperty("onError", "drop");
+		projectErrorStrategy = projectProperties.getProperty("onError", IndexItem.ON_ERROR_DROP);
 
 		this.evaluationDate = evaluationDate;
 		
@@ -100,9 +100,6 @@ public class EvalProject {
 		List<Relation> metricrelations = computeMetricRelations(metrics);
 		log.info("Storing metric relations (" + metricrelations.size() + " computed)\n");
 		elasticTarget.storeRelations( projectProperties, evaluationDate, metricrelations );
-
-		// TODO Flush indices instead of waiting
-		// try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
 		
 		log.info("Computing Factors ...\n"); 
 		Collection<Factor> factors = computeFactors();
@@ -436,7 +433,7 @@ public class EvalProject {
 		
 			String onError = metricQueryDef.getProperty("onError");
 			if ( onError == null ) {
-				onError = globalErrorStrategy;
+				onError = projectErrorStrategy;
 			}
 		
 			Metric m = new Metric(project, metric, evaluationDate, factors, weights, name, description, datasource, metricValue, info, onError );
@@ -518,7 +515,7 @@ public class EvalProject {
 			String onError = factorProperties.getProperty(f + ".onError");
 			
 			if ( onError == null ) {
-				onError = globalErrorStrategy;
+				onError = projectErrorStrategy;
 			}
 
 			Factor fact = new Factor(enabled, project, factor, evaluationDate, indicators, weights, name, description, datasource, value, info, onError );
@@ -562,7 +559,7 @@ public class EvalProject {
 			String onError = indicatorProperties.getProperty(i + ".onError");
 			
 			if ( onError == null ) {
-				onError = globalErrorStrategy;
+				onError = projectErrorStrategy;
 			}
 
 			Indicator ind = new Indicator(enabled, project, indicator, evaluationDate, parents, weights, name, description, datasource, value, info, onError );
