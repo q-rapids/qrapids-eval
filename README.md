@@ -106,7 +106,7 @@ onError=set0
 
 Values of the *project.properties* can be used in *params-*  and *metrics* queries. To refer to a project property in a query's property file, prefix the property-name with '$$'. In the example below, the project properties sonarqube.measures.index and sonarqube.measures.bcKey are used in the *01_lastSnapshotDate.properties* in the params folder:
 
-```
+```properties
 index=$$sonarqube.measures.index
 param.bcKey=$$sonarqube.measures.bcKey
 result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
@@ -127,7 +127,7 @@ __Example (01_lastShnapshotDate)__
 
 01_lastSnapshotDate.properties
 
-```
+```properties
 index=$$sonarqube.measures.index
 param.bcKey=$$sonarqube.measures.bcKey
 result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
@@ -322,7 +322,7 @@ The factors.properties file defines factors to compute along with their properti
 
 Example factor definition (codequality):
 
-```
+```properties
 codequality.enabled=true
 codequality.name=Code Quality
 codequality.description=It measures the impact of code changes in source code quality. Specifically, ...
@@ -336,7 +336,7 @@ __Note:__ The onError property can be set to 'drop' or 'set0' and overwrites to 
 ### projects/default/indicators.properties
 The indicators.properties file defines the indicators for a project. The parents- and weights-attribute currently have no effect, but could define an additional level of aggregation in future. 
 
-```
+```properties
 productquality.enabled=true
 productquality.name=Product Quality
 productquality.description=Quality of the Product
