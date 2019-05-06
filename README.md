@@ -37,7 +37,7 @@ The folder structure shown below defines the evaluation of one project 'default'
 ```
 ### projects/eval.properties
 
-The * eval.properties * file defines global configuration options. Currently, only the url for notifying the dashboard about a new evaluation is contained:
+The *eval.properties* file defines global configuration options. Currently, only the url for notifying the dashboard about a new evaluation is contained:
 
 ```
 dashboard.notification.url=http://<address>/QRapids-<version>/api/assessStrategicIndicators
