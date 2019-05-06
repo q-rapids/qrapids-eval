@@ -104,7 +104,7 @@ indicators.index.type=indicators
 onError=set0
 ```
 
-Values of the * project.properties * can be used in * params- *  and * metrics * queries. To refer to a project property in a query's property file, prefix the property-name with '$$'. In the example below, the project properties sonarqube.measures.index and sonarqube.measures.bcKey are used in the * 01_lastSnapshotDate.properties * in the params folder:
+Values of the *project.properties* can be used in *params-*  and *metrics* queries. To refer to a project property in a query's property file, prefix the property-name with '$$'. In the example below, the project properties sonarqube.measures.index and sonarqube.measures.bcKey are used in the *01_lastSnapshotDate.properties* in the params folder:
 
 ```
 index=$$sonarqube.measures.index
@@ -114,9 +114,9 @@ result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
 
 
 ### projects/default/params
-In the first phase of a project evaluation, qr-eval executes the queries in the params folder (* params queries*). These do not compute metrics or factors, but allow for querying arbitrary other values, which then can be used in subsequent * params * and * metrics * queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
+In the first phase of a project evaluation, qr-eval executes the queries in the params folder (*params queries*). These do not compute metrics or factors, but allow for querying arbitrary other values (noted with prefix 'result., which then can be used in subsequent *params* and *metrics* queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
 
-The * params * queries are executed in sequence (alphabetical order). For this reason, it is a good practice to follow the suggested naming scheme for parameter queries and start the name of with a sequence of numbers (e.g. 01_query_name, 02_other_name). Since params queries build on each other, a proper ordering is necessary.
+The *params* queries are executed in sequence (alphabetical order). For this reason, it is a good practice to follow the suggested naming scheme for parameter queries and start the name of with a sequence of numbers (e.g. 01_query_name, 02_other_name). Since params queries build on each other, a proper ordering is necessary.
 
 
 A query consists of a pair of files:
@@ -139,11 +139,11 @@ All results computed by params queries can be used as parameters (without declar
 
 __Query Parameters__
 
-Qr-eval internally uses [Elasticsearch search templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html) to perform * params, metrics *, and other queries. Search templates can receive parameters (noted with double curly braces: {{parameter}} ). The parameters are replaced by actual values, before the query is executed. The replacement is done verbatim and doesn't care about data types. Thus, if you want a string parameter, you'll have to add quotes around the parameter yourself (as seen below with the evaluationDate parameter).
-+ The evaluationDate is available to all * params * and * metrics * queries without declaration. Qr-eval started without command-line options sets the evaluationDate to the date of today (string, format yyyy-mm-dd).
-+ Elements of the * project.properties * can be declared as a parameter with the $$-notation, as seen above (param.bcKey)
-+ Literals (numbers and strings) can be used after declaration as parameters (e.g by * param.myThreshold=15 *)
-+ Results (noted with prefix 'result.') of * params queries * can be used as parameters in succeeding * params * and * metrics * queries without declaration.
+Qr-eval internally uses [Elasticsearch search templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html) to perform *params, metrics*, and other queries. Search templates can receive parameters (noted with double curly braces: {{parameter}} ). The parameters are replaced by actual values, before the query is executed. The replacement is done verbatim and doesn't care about data types. Thus, if you want a string parameter, you'll have to add quotes around the parameter yourself (as seen below with the evaluationDate parameter).
++ The evaluationDate is available to all *params* and *metrics* queries without declaration. Qr-eval started without command-line options sets the evaluationDate to the date of today (string, format yyyy-mm-dd).
++ Elements of the *project.properties* can be declared as a parameter with the $$-notation, as seen above (param.bcKey)
++ Literals (numbers and strings) can be used after declaration as parameters (e.g by *param.myThreshold=15*)
++ Results (noted with prefix 'result.') of *params queries* can be used as parameters in succeeding *params* and *metrics* queries without declaration.
 
 01_lastSnapshotDate.query
 
@@ -204,7 +204,7 @@ Example query result:
 The result of the query is specified as path in the returned json: __"hits" -> "hits" [0] -> "_source" -> "snapshotDate" = "2018-12-04"__
 
 ### projects/default/metrics
-The folder contains the metrics definitions of a project. As * params queries *, * metrics queries * consist of a pair of files, a .properties and a .query file. In addition to params queries, metrics queries compute a metric value defined by a formula. The computed metric value is stored in the metrics index (defined in project.properties) after query execution.
+The folder contains the metrics definitions of a project. As *params queries*, *metrics queries* consist of a pair of files, a .properties and a .query file. In addition to params queries, metrics queries compute a metric value defined by a formula. The computed metric value is stored in the metrics index (defined in project.properties) after query execution.
 
 Computed metrics get aggregated into factors. Therefore you have to specify the factors, a metric is going to influence. Metrics can influence one or more factors, that are supplied as a comma-separated list of factor-ids together with the weight describing the strength of the influence. In the example below, the metric 'complexity' influences two factors (codequality and other) with weights 2.0 for codequality and 1.0 for other. The value of a factor is then computed as a weighted sum of all metrics influencing a factor.
 
@@ -272,7 +272,7 @@ complextiy.query
 The complexity query is based on a [bool query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html) and uses a [bucket range aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-range-aggregation.html) to derive its results.
 The query considers documents/records that fulfill the following conditions:
 + Only documents with a specific {{bcKey}} (only files of this project)
-+ Only documents with a specific {{snapshotDate}} (parameter derived in * params query * 01_snapshotDate)
++ Only documents with a specific {{snapshotDate}} (parameter derived in *params query* 01_snapshotDate)
 + Only documents for metric "function_complexity"
 + Only documents with qualifier "FIL" (analyze only files, not folders etc.)
 
@@ -313,12 +313,12 @@ metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) 
 The factors.properties file defines factors to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into indicators, so they have to specify the indicators they are influencing along with the weights of the influence. The notation used is <factorid>.<propertyname> = <propertyvalue>. 
 
 
-+ The * enabled * attribute enables/disables a factor (no records written for a factor when disabled)
-+ The * name * property supplies a user-friendly name of a factor 
-+ The * decription * attribute describes the intention of the factor
-+ The * indicators * attribute contains a list of influenced indicators (which are defined in a separate properties file).
-+ The * weights * attribute sets the strength of the influence. Obviously, the lists in 'indicators' and 'weights' have to have the same length!
-+ The * onError * attribute tells qr-eval what to do in case of factor computation errors (e.g. no metrics influence a factor, which results in a division by zero)
++ The *enabled* attribute enables/disables a factor (no records written for a factor when disabled)
++ The *name* property supplies a user-friendly name of a factor 
++ The *decription* attribute describes the intention of the factor
++ The *indicators* attribute contains a list of influenced indicators (which are defined in a separate properties file).
++ The *weights* attribute sets the strength of the influence. Obviously, the lists in 'indicators' and 'weights' have to have the same length!
++ The *onError* attribute tells qr-eval what to do in case of factor computation errors (e.g. no metrics influence a factor, which results in a division by zero)
 
 Example factor definition (codequality):
 
