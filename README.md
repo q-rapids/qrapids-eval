@@ -310,7 +310,7 @@ metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) 
 ```
 
 ### projects/default/factors.properties
-The factors.properties file defines factors to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into indicators, so they have to specify the indicators they are influencing along with the weights of the influence. The notation used is <factorid>.<propertyname> = <propertyvalue>. 
+The factors.properties file defines factors to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into indicators, so they have to specify the indicators they are influencing along with the weights of the influence. The notation used has to be read as *factorid.property=value* . 
 
 
 + The *enabled* attribute enables/disables a factor (no records written for a factor when disabled)
