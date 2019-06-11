@@ -1,7 +1,7 @@
 # Q-Rapids eval ![](https://img.shields.io/badge/License-Apache2.0-blue.svg)
 Qrapids-eval computes metrics, factors, and indicators on raw data stored in Elasticsearch. In the q-rapids context, raw data is produced by a q-rapids kafka connectors (read from Jira, Sonarqube or other sources). Q-Rapids eval aggregates the raw data into metrics, and further on into factors and indicators, according to a defined quality model.
 
-##Configuration
+## Configuration
 Q-Rapids eval is a commandline tool and is configured via a set of text files (query- and property-files) that are stored in a special folder structure. The top-folder is named 'projects'. This folder has to be present in the same directory where the qrapids-eval.jar file is stored. Each subfolder defines a quality model for a project to be evaluated.
 
 The folder structure shown below defines the evaluation of one project 'default'.
