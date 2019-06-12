@@ -80,11 +80,16 @@ public class QueryDef {
 	public String getProperty( String key ) {
 		
 		String propValue = props.getProperty(key);
+		
+		if ( propValue == null)
+			return null;
+		
 		if ( propValue.startsWith("$$") ) {
 			return projectProperties.getProperty( propValue.substring(2) );
 		} else {
 			return propValue;
 		}
+		
 	}
 	
 	public Map<String,String> getResults() {
