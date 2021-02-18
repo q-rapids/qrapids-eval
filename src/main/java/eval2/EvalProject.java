@@ -96,7 +96,8 @@ public class EvalProject {
 		
 		log.info("Storing metrics (" + metrics.size() + " computed)\n");
 		elasticTarget.storeMetrics( projectProperties, evaluationDate, metrics );
-		
+
+		/*
 		List<Relation> metricrelations = computeMetricRelations(metrics);
 		log.info("Storing metric relations (" + metricrelations.size() + " computed)\n");
 		elasticTarget.storeRelations( projectProperties, evaluationDate, metricrelations );
@@ -110,14 +111,14 @@ public class EvalProject {
 		log.info("Storing factor relations ... \n");
 		List<Relation> factorrelations = computeFactorRelations(factors);
 		elasticTarget.storeRelations( projectProperties, evaluationDate, factorrelations );
-		
+
 		// try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
 		
 		log.info("Computing Indicators  ...\n");
 		Collection<Indicator> indicators = computeIndicators();
 		
 		elasticTarget.storeIndicators( projectProperties, evaluationDate, indicators );
-
+		*/
 	}
 	
 
@@ -399,12 +400,12 @@ public class EvalProject {
 			} catch (RuntimeException rte) {
 				
 				log.warning("Evaluation of formula " + metricDef + " failed. \nMetric: " + key);
-				if ( metricQueryDef.onErrorSet0() ) {
-					log.warning("Metric " + key + " set to 0.");
-					metricValue = 0.0;
-				} else {
+				if ( metricQueryDef.onErrorDrop() ) {
 					log.warning("Metric " + key + " is dropped.");
 					continue;
+				} else {
+					metricValue = metricQueryDef.getErrorValue();
+					log.warning("Metric " + key + " set to " + metricValue + ".");
 				}
 				
 			}
@@ -413,14 +414,13 @@ public class EvalProject {
 			
 			if( metricValue.isInfinite() || metricValue.isNaN() ) {
 				log.warning("Formula evaluated as NaN or inifinite.");
-				if ( metricQueryDef.onErrorSet0() ) {
-					log.warning("Metric " + key + " set to 0.");
-					metricValue = 0.0;
-				} else {
+				if ( metricQueryDef.onErrorDrop() ) {
 					log.warning("Metric " + key + " is dropped.");
 					continue;
+				} else {
+					metricValue = metricQueryDef.getErrorValue();
+					log.warning("Metric " + key + " set to " + metricValue + ".");
 				}
-				continue;
 			}
 			
 			String project = projectProperties.getProperty("project.name");

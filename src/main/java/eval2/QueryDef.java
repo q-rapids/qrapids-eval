@@ -222,13 +222,13 @@ public class QueryDef {
 		return onError().equals(IndexItem.ON_ERROR_DROP);
 	}
 	
-	public Boolean onErrorSet0() {
-		return onError().equals(IndexItem.ON_ERROR_SET0);
-	}
-	
 	public void setIndex( String index ) {
 		props.setProperty("index", index);
 	}
 
-
+	public Double getErrorValue() {
+		Double result = 1.0;
+		if (onError().equals(IndexItem.ON_ERROR_SET0)) result = 0.0;
+		return result;
+	}
 }

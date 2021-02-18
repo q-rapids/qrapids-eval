@@ -5,6 +5,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -76,8 +77,15 @@ public class Eval {
 			}
 		}
 
-		List<File> projectFolders = getProjectFolders();
+		List<File> projectFolders = getProjectFolders(PROJECTS_DIR);
+
+		evaluate(projectFolders);
+
+		notifyDashboard();
 		
+	}
+
+	private static void evaluate( List<File> projectFolders ) {
 		for ( File projectDir : projectFolders ) {
 			for ( String ed : evaluationDates ) {
 				log.info("Evaluating project folder " + projectDir.getName() + " for evaluationDate " + ed + ".\n");
@@ -90,9 +98,24 @@ public class Eval {
 				}
 			}
 		}
-		
-		notifyDashboard();
-		
+	}
+
+	public static void evaluateQualityModel(String dir, Date date1, Date date2) throws ParseException {
+
+		// read parameters
+		if (date1 != null && date2 != null) { // if two dates are passed --> we obtain a from and to dates
+			fromDate = date1;
+			toDate = date2;
+			evaluationDates.addAll( enumeratePeriod(fromDate, toDate) );
+			log.info("Using user-defined evaluation period: " + dateFormat.format( fromDate ) + " - " + dateFormat.format( toDate ) + ".\n" );
+		} else if (date1 != null ) { // if only one date is passed --> we obtain an evaluation date
+			evaluationDates.add(dateFormat.format(date1));
+			log.info("Using user-defined evaluationDate: " + dateFormat.format(date1));
+		}
+
+		List<File> projectFolders = getProjectFolders(dir);
+
+		evaluate(projectFolders);
 	}
 	
 	private static List<String> enumeratePeriod(Date fromDate, Date toDate) {
@@ -146,11 +169,14 @@ public class Eval {
 	}
 
 
-	private static List<File> getProjectFolders() {
-		
+	private static List<File> getProjectFolders(String dir) {
 		List<File> result = new ArrayList<>();
-		
-		for ( File p : PROJECTS_FOLDER.listFiles() ) {
+		File[] folder = PROJECTS_FOLDER.listFiles(); // by default use defined projects folder
+
+		if (dir != null && !dir.isEmpty())
+			folder = new File(dir).listFiles(); // if dir passed use it as projects folder
+
+		for ( File p : folder ) {
 			if ( p.isDirectory() ) {
 				result.add(p);
 			}
