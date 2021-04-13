@@ -1,5 +1,7 @@
 package eval2;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -35,35 +37,6 @@ public class QueryDef {
 		this.props = props;
 		
 	}
-	
-	/**
-	 * Get properties as Map<String,Object>
-	 * @return
-	 */
-	public Map<String,Object> getPropertiesMap() {
-		
-		Map<String,Object> result = new HashMap<>();
-		
-		for ( String propName : props.stringPropertyNames() ) {
-			
-			String prop = props.getProperty(propName);
-			
-			Object o;
-			// project variables start with "$$"
-			if ( prop.startsWith("$$") ) {
-				String projectPropertyKey = prop.substring(2);
-				String projectPropertyValue = projectProperties.getProperty(projectPropertyKey);
-				 o = NumberUtils.getNumberOrString( projectPropertyValue );
-			} else {
-				o = NumberUtils.getNumberOrString(prop);
-			}
-			
-			result.put( propName, o );
-		}
-		
-		return result;
-	}
-	
 
 	public String getQueryTemplate() {
 		return queryTemplate;
@@ -81,15 +54,17 @@ public class QueryDef {
 		
 		String propValue = props.getProperty(key);
 		
-		if ( propValue == null)
-			return null;
-		
-		if ( propValue.startsWith("$$") ) {
-			return projectProperties.getProperty( propValue.substring(2) );
-		} else {
-			return propValue;
+		if ( propValue != null && propValue.startsWith("$$") ) {
+			String projectValue = projectProperties.getProperty( propValue.substring(2) );
+			if (projectValue != null && projectValue.contains("#TODAY#")){
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY.MM.dd");
+				propValue = projectValue.replace("#TODAY#", LocalDate.now().format(formatter));
+				System.out.println("INDEX REFORMADO: " + propValue);
+			} else {
+				propValue = projectValue;
+			}
 		}
-		
+		return propValue;
 	}
 	
 	public Map<String,String> getResults() {
@@ -113,7 +88,7 @@ public class QueryDef {
 		Map<String,Object> parameter = new HashMap<>();
 
 		for ( String p : props.stringPropertyNames() ) {
-			
+			//properties that correspond to parameters
 			if ( p.startsWith( prefix ) ) {
 				
 				String resultName = p.substring(prefix.length());
